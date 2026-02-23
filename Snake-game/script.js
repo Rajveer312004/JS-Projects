@@ -1,17 +1,34 @@
 const board = document.querySelector('.board');
-const blockHeight = 30
+const startButton = document.querySelector(".btn-start")
+const modal = document.querySelector(".modal")
+const startGameModal = document.querySelector(".start-game")
+const GameOverModal = document.querySelector(".game-over")
+const restartButton = document.querySelector(".btn-restart")
+
+const highScoreElement = document.querySelector("#high-score")
+const scoreElement = document.querySelector("#score")
+const timeElement = document.querySelector("#time")
+
+const blockHeight = 30;
 const blockWidth = 30;
+
+let highScore = localStorage.getItem("highScore") || 0;
+let score = 0;
+let time = "00-00"
+
+highScoreElement.innerText = highScore
 
 const cols  = Math.floor(board.clientWidth / blockWidth);
 const rows = Math.floor(board.clientHeight / blockHeight);
+
+
 let inteValId = null;
+let timerIntervalId = null;
+
 let food = {x:Math.floor(Math.random()* rows) , y: Math.floor(Math.random()*cols)}
 
 const blocks = [];
-const snake = [
-     { x:1, y:3},
-   
-];
+let snake = [ { x:1, y:3},];
 
 let direction = "down"
 
@@ -39,10 +56,20 @@ function render(){
         head = {x: snake[0].x+1 , y:snake[0].y}
      }
 
+    
+     // wall collision logic
+
      if (head.x < 0 || head.x >= rows || head.y <0 || head.y>= cols) {
-        alert("Game Over")
-        clearInterval(interValId)
+        clearInterval(inteValId);
+
+        modal.style.display = "flex"
+        startGameModal.style.display = "none"
+        GameOverModal.style.display = "flex" 
+
+        return ;
      }
+
+     // food consnume logic
 
      if (head.x==food.x && head.y==food.y) {
            blocks[`${food.x}-${food.y}`].classList.remove("food");
@@ -50,6 +77,16 @@ function render(){
                x:Math.floor(Math.random()* rows) , y:Math.floor(Math.random()*cols)
            }
            blocks[`${food.x}-${food.y}`].classList.add("food")
+
+           snake.unshift(head)
+
+           score+= 10;
+           scoreElement.innerText = score;
+
+           if (score>highScore) {
+            highScore = score;
+            localStorage.setItem("highScore",highScore.toString())
+           }
      }
 
      snake.forEach(segment =>{
@@ -64,9 +101,46 @@ function render(){
     })
 }
  
-interValId = setInterval(() => {
-    render();
-}, 300  );
+startButton.addEventListener("click", () => {
+    modal.style.display ="none"
+    inteValId = setInterval(() => { render ()} , 600)
+    timerIntervalId = setInterval(() => {
+        let[min,sec] = time.split("-").map(Number)
+
+        if (sec ==59) {
+            min+=1
+            sec=0
+        }else{
+            sec += 1
+        }
+        time = `${min}-${sec}`
+        timeElement.innerText = time
+    },1000)
+})
+
+restartButton.addEventListener("click", restartGame)
+
+function restartGame(){
+
+    blocks[`${food.x}-${food.y}`].classList.remove("food");
+    snake.forEach(segment => {
+        blocks[`${segment.x}-${segment.y}`].classList.remove("fill")
+    })
+
+    score = 0;
+    time = `00-00`
+
+    
+    scoreElement.innerText = score;
+    timeElement.innerText = time
+    highScoreElement.innerText = highScore
+
+    modal.style.display = "none"
+    direction = "down"
+    snake = [ { x:1, y:3},]; 
+    food = {x:Math.floor(Math.random()* rows) , y: Math.floor(Math.random()*cols)}
+    inteValId = setInterval(() => { render ()} , 400)
+}
 
 addEventListener("keydown",(event)=>{
        if (event.key == "ArrowRight") {
